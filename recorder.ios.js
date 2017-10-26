@@ -39,7 +39,8 @@ export default class Recorder extends Component {
     config: PropTypes.object,
     device: PropTypes.string,
     flashMode: PropTypes.number,
-    onNewSegment: PropTypes.func
+    onNewSegment: PropTypes.func,
+    onEnd: PropTypes.func
   }
 
   /*** PUBLIC METHODS ***/
@@ -94,6 +95,7 @@ export default class Recorder extends Component {
   render() {
     const config = merge({
       autoSetVideoOrientation: false,
+      maxRecordDuration: 0,
       video: {
         enabled: true,
         bitrate: 2000000, // 2Mbit/s

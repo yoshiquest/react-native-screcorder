@@ -1,5 +1,6 @@
 #import "RNRecorderManager.h"
 #import "RNRecorder.h"
+#import "RNSCRecorder.h"
 
 #import <React/RCTBridge.h>
 #import <React/RCTEventDispatcher.h>
@@ -14,6 +15,7 @@ RCT_EXPORT_MODULE();
 RCT_EXPORT_VIEW_PROPERTY(config, NSDictionary);
 RCT_EXPORT_VIEW_PROPERTY(device, NSString);
 RCT_EXPORT_VIEW_PROPERTY(flashMode, NSInteger);
+RCT_EXPORT_VIEW_PROPERTY(onEnd, RCTBubblingEventBlock);
 
 @synthesize bridge = _bridge;
 
@@ -22,11 +24,18 @@ RCT_EXPORT_VIEW_PROPERTY(flashMode, NSInteger);
     return dispatch_get_main_queue();
 }
 
+- (NSArray *) customDirectEventTypes {
+    return @[
+             @"onEnd"
+             ];
+}
+
 - (UIView *)view
 {
     // Alloc UI element
     if (_recorderView == nil) {
         _recorderView = [[RNRecorder alloc] initWithEventDispatcher:self.bridge.eventDispatcher];
+        _recorderView.delegate = self;
     }
     return _recorderView;
 }
@@ -89,6 +98,35 @@ RCT_EXPORT_METHOD(save:(RCTResponseSenderBlock)callback)
             callback(@[[error localizedDescription], [NSNull null]]);
         }
     }];
+}
+
+#pragma mark - SCRecorder events
+
+- (void)recorder:(RNSCRecorder *)recorder didInitializeAudioInSession:(SCRecordSession *)recordSession error:(NSError *)error {
+    if (error == nil) {
+        NSLog(@"Initialized audio in record session");
+    } else {
+        NSLog(@"Failed to initialize audio in record session: %@", error.localizedDescription);
+    }
+}
+
+- (void)recorder:(RNSCRecorder *)recorder didInitializeVideoInSession:(SCRecordSession *)recordSession error:(NSError *)error {
+    if (error == nil) {
+        NSLog(@"Initialized video in record session");
+    } else {
+        NSLog(@"Failed to initialize video in record session: %@", error.localizedDescription);
+    }
+}
+
+- (void)recorder:(RNSCRecorder *)recorder didCompleteSession:(SCRecordSession *)recordSession
+{
+    NSLog(@"\n\nSession Completed\n\n");
+    if(!recorder.onEnd)
+    {
+        return;
+    }
+    
+    recorder.onEnd(@{});
 }
 
 @end

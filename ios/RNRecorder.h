@@ -1,10 +1,14 @@
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
 #import "SCRecorder.h"
+#import <React/RCTComponent.h>
 
 @class RTCEventDispatcher;
 
-@interface RNRecorder : UIView<SCRecorderDelegate>
+@interface RNRecorder : UIView
+
+@property (weak, nonatomic) id<SCRecorderDelegate> __nullable delegate;
+@property (nonatomic, copy) RCTBubblingEventBlock onEnd;
 
 - (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher NS_DESIGNATED_INITIALIZER;
 

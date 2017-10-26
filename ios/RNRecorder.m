@@ -1,6 +1,7 @@
 #import <React/RCTBridge.h>
 #import "RNRecorder.h"
 #import "RNRecorderManager.h"
+#import "RNSCRecorder.h"
 #import <React/RCTLog.h>
 #import <React/RCTUtils.h>
 
@@ -11,7 +12,7 @@
    /* Required to publish events */
    RCTEventDispatcher *_eventDispatcher;
    /* SCRecorder instance */
-   SCRecorder *_recorder;
+   RNSCRecorder *_recorder;
    /* SCRecorder session instance */
    SCRecordSession *_session;
    /* Preview view ¨*/
@@ -41,9 +42,8 @@
 
    if ((self = [super init])) {
       if (_recorder == nil) {
-         _recorder = [SCRecorder recorder];
+         _recorder = [[RNSCRecorder alloc] init];
          _recorder.captureSessionPreset = [SCRecorderTools bestCaptureSessionPresetCompatibleWithAllDevices];
-         _recorder.delegate = self;
          _recorder.initializeSessionLazily = NO;
       }
    }
@@ -60,6 +60,15 @@
 
    // Recorder config
    _recorder.autoSetVideoOrientation = [RCTConvert BOOL:[config objectForKey:@"autoSetVideoOrientation"]];
+   Float64 maxRecordDuration = [RCTConvert float:[config objectForKey:@"maxRecordDuration"]];
+   if (maxRecordDuration > 0)
+   {
+      _recorder.maxRecordDuration = CMTimeMakeWithSeconds(maxRecordDuration, 6000);
+   }
+   else
+   {
+      _recorder.maxRecordDuration = kCMTimeInvalid;
+   }
 
    // Video config
    _recorder.videoConfiguration.enabled = [RCTConvert BOOL:[video objectForKey:@"enabled"]];
@@ -124,6 +133,16 @@
    if (_session != nil) {
       _session.fileType = _videoFormat;
    }
+}
+
+- (void)setDelegate:(id<SCRecorderDelegate>)delegate
+{
+   _recorder.delegate = delegate;
+}
+
+- (void)setOnEnd:(RCTBubblingEventBlock)onEnd
+{
+   _recorder.onEnd=onEnd;
 }
 
 #pragma mark - Private Methods
@@ -261,25 +280,6 @@
    [assetExportSession exportAsynchronouslyWithCompletionHandler: ^{
       callback(assetExportSession.error, assetExportSession.outputUrl);
    }];
-}
-
-
-#pragma mark - SCRecorder events
-
-- (void)recorder:(SCRecorder *)recorder didInitializeAudioInSession:(SCRecordSession *)recordSession error:(NSError *)error {
-   if (error == nil) {
-      NSLog(@"Initialized audio in record session");
-   } else {
-      NSLog(@"Failed to initialize audio in record session: %@", error.localizedDescription);
-   }
-}
-
-- (void)recorder:(SCRecorder *)recorder didInitializeVideoInSession:(SCRecordSession *)recordSession error:(NSError *)error {
-   if (error == nil) {
-      NSLog(@"Initialized video in record session");
-   } else {
-      NSLog(@"Failed to initialize video in record session: %@", error.localizedDescription);
-   }
 }
 
 #pragma mark - React View Management
