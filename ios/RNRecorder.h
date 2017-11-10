@@ -3,14 +3,9 @@
 #import "SCRecorder.h"
 #import <React/RCTComponent.h>
 
-@class RTCEventDispatcher;
+@interface RNRecorder : UIView <SCRecorderDelegate>
 
-@interface RNRecorder : UIView
-
-@property (weak, nonatomic) id<SCRecorderDelegate> __nullable delegate;
 @property (nonatomic, copy) RCTBubblingEventBlock onEnd;
-
-- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher NS_DESIGNATED_INITIALIZER;
 
 - (void)record;
 - (void)capture:(void(^)(NSError *error, NSString *url))callback;
@@ -20,6 +15,7 @@
 - (void)removeAllSegments;
 - (void)removeSegmentAtIndex:(NSInteger)index;
 - (void)save:(void(^)(NSError *error, NSURL *outputUrl))callback;
+- (void)saveWithAudio:(NSString*)audioPath saveCallback:(void(^)(NSError *error, NSURL *outputUrl))callback;
 - (NSString*)saveImage:(UIImage*)image;
 
 

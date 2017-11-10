@@ -75,6 +75,10 @@ export default class Recorder extends Component {
     NativeModules.RNRecorderManager.save(callback);
   }
 
+  saveWithAudio(audioPath, callback) {
+  	NativeModules.RNRecorderManager.saveWithAudio(audioPath, callback);
+  }
+
   // Remove last segment of the session
   removeLastSegment() {
     NativeModules.RNRecorderManager.removeLastSegment();

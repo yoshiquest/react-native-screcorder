@@ -1,7 +1,6 @@
 #import <React/RCTBridge.h>
 #import "RNRecorder.h"
 #import "RNRecorderManager.h"
-#import "RNSCRecorder.h"
 #import <React/RCTLog.h>
 #import <React/RCTUtils.h>
 
@@ -9,10 +8,8 @@
 
 @implementation RNRecorder
 {
-   /* Required to publish events */
-   RCTEventDispatcher *_eventDispatcher;
    /* SCRecorder instance */
-   RNSCRecorder *_recorder;
+   SCRecorder *_recorder;
    /* SCRecorder session instance */
    SCRecordSession *_session;
    /* Preview view ¨*/
@@ -21,8 +18,6 @@
    NSDictionary *_config;
    /* Camera type (front || back) */
    NSString *_device;
-   /* Flash mode */
-   NSInteger flashMode;
 
    /* Video format */
    NSString *_videoFormat;
@@ -33,17 +28,19 @@
 
    /* Audio quality */
    NSString *_audioQuality;
+   
+   NSInteger _flashMode;
 }
 
 #pragma mark - Init
 
-- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher
+- (instancetype)init
 {
-
    if ((self = [super init])) {
       if (_recorder == nil) {
-         _recorder = [[RNSCRecorder alloc] init];
+         _recorder = [SCRecorder recorder];
          _recorder.captureSessionPreset = [SCRecorderTools bestCaptureSessionPresetCompatibleWithAllDevices];
+         _recorder.delegate = self;
          _recorder.initializeSessionLazily = NO;
       }
    }
@@ -100,10 +97,12 @@
    } else if ([device  isEqual: @"back"]) {
       _recorder.device = AVCaptureDevicePositionBack;
    }
+   [self setFlashMode:_flashMode];
 }
 
 - (void)setFlashMode: (NSInteger)mode
 {
+   _flashMode = mode;
    switch (mode) {
       case 0:
          _recorder.flashMode = SCFlashModeOff;
@@ -135,14 +134,30 @@
    }
 }
 
-- (void)setDelegate:(id<SCRecorderDelegate>)delegate
-{
-   _recorder.delegate = delegate;
+#pragma mark - SCRecorder events
+
+- (void)recorder:(SCRecorder *)recorder didInitializeAudioInSession:(SCRecordSession *)recordSession error:(NSError *)error {
+   if (error == nil) {
+      NSLog(@"Initialized audio in record session");
+   } else {
+      NSLog(@"Failed to initialize audio in record session: %@", error.localizedDescription);
+   }
 }
 
-- (void)setOnEnd:(RCTBubblingEventBlock)onEnd
+- (void)recorder:(SCRecorder *)recorder didInitializeVideoInSession:(SCRecordSession *)recordSession error:(NSError *)error {
+   if (error == nil) {
+      NSLog(@"Initialized video in record session");
+   } else {
+      NSLog(@"Failed to initialize video in record session: %@", error.localizedDescription);
+   }
+}
+
+- (void)recorder:(SCRecorder *)recorder didCompleteSession:(SCRecordSession *)recordSession
 {
-   _recorder.onEnd=onEnd;
+   if(_onEnd)
+   {
+      _onEnd(nil);
+   }
 }
 
 #pragma mark - Private Methods
@@ -265,21 +280,57 @@
    [_session removeSegmentAtIndex:index deleteFile:true];
 }
 
-- (void)save:(void(^)(NSError *error, NSURL *outputUrl))callback
+- (void)saveAsset:(AVAsset*)asset saveCallback:(void(^)(NSError *error, NSURL *outputUrl))callback
 {
-   AVAsset *asset = _session.assetRepresentingSegments;
    SCAssetExportSession *assetExportSession = [[SCAssetExportSession alloc] initWithAsset:asset];
    assetExportSession.outputFileType = _videoFormat;
    assetExportSession.outputUrl = [_session outputUrl];
    assetExportSession.videoConfiguration.preset = _videoQuality;
    assetExportSession.audioConfiguration.preset = _audioQuality;
-
+   
    // Apply filters
    assetExportSession.videoConfiguration.filter = [self createFilter];
-
+   
    [assetExportSession exportAsynchronouslyWithCompletionHandler: ^{
       callback(assetExportSession.error, assetExportSession.outputUrl);
    }];
+}
+
+- (void)save:(void(^)(NSError *error, NSURL *outputUrl))callback
+{
+   AVAsset *asset = _session.assetRepresentingSegments;
+   [self saveAsset:asset saveCallback:callback];
+}
+
+- (void)saveWithAudio:(NSString*)audioPath saveCallback:(void(^)(NSError *error, NSURL *outputUrl))callback
+{
+   AVMutableComposition* composition = [[AVMutableComposition alloc]init];
+   [_session appendSegmentsToComposition:composition];
+   AVURLAsset* audioAsset = [[AVURLAsset alloc]initWithURL:[NSURL fileURLWithPath:audioPath]options:nil];
+   AVMutableCompositionTrack *audioTrack = [composition    addMutableTrackWithMediaType:AVMediaTypeAudio preferredTrackID:kCMPersistentTrackID_Invalid];
+   NSString *tracksKey = @"tracks";
+   [audioAsset loadValuesAsynchronouslyForKeys:@[tracksKey] completionHandler:
+    ^{
+       NSError *error;
+       AVKeyValueStatus status = [audioAsset statusOfValueForKey:tracksKey error:&error];
+       if (status == AVKeyValueStatusLoaded)
+       {
+          [audioTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero,_session.duration)
+                              ofTrack:[[audioAsset tracksWithMediaType:AVMediaTypeAudio] objectAtIndex:0] atTime:kCMTimeZero error:&error];
+          if(error == nil)
+          {
+             [self saveAsset:composition saveCallback:callback];
+          }
+          else
+          {
+             callback(error, nil);
+          }
+       }
+       else
+       {
+          callback(error, nil);
+       }
+    }];
 }
 
 #pragma mark - React View Management
@@ -288,19 +339,19 @@
 - (void)layoutSubviews
 {
    [super layoutSubviews];
-
    if (_previewView == nil) {
       _previewView = [[UIView alloc] initWithFrame:self.bounds];
       _recorder.previewView = _previewView;
       [_previewView setBackgroundColor:[UIColor blackColor]];
       [self insertSubview:_previewView atIndex:0];
       [_recorder startRunning];
-
+   }
+   
+   if (_session == nil) {
       _session = [SCRecordSession recordSession];
       [self setVideoFormat:_videoFormat];
       _recorder.session = _session;
    }
-
    return;
 }
 
@@ -316,6 +367,9 @@
 
 - (void)removeFromSuperview
 {
+   [_recorder stopRunning];
+   _previewView = nil;
+   _recorder.previewView = nil;
    [super removeFromSuperview];
 }
 

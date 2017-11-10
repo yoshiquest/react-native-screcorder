@@ -1,6 +1,5 @@
 #import "RNRecorderManager.h"
 #import "RNRecorder.h"
-#import "RNSCRecorder.h"
 
 #import <React/RCTBridge.h>
 #import <React/RCTEventDispatcher.h>
@@ -17,25 +16,16 @@ RCT_EXPORT_VIEW_PROPERTY(device, NSString);
 RCT_EXPORT_VIEW_PROPERTY(flashMode, NSInteger);
 RCT_EXPORT_VIEW_PROPERTY(onEnd, RCTBubblingEventBlock);
 
-@synthesize bridge = _bridge;
-
 - (dispatch_queue_t)methodQueue
 {
     return dispatch_get_main_queue();
-}
-
-- (NSArray *) customDirectEventTypes {
-    return @[
-             @"onEnd"
-             ];
 }
 
 - (UIView *)view
 {
     // Alloc UI element
     if (_recorderView == nil) {
-        _recorderView = [[RNRecorder alloc] initWithEventDispatcher:self.bridge.eventDispatcher];
-        _recorderView.delegate = self;
+        _recorderView = [[RNRecorder alloc] init];
     }
     return _recorderView;
 }
@@ -63,11 +53,10 @@ RCT_EXPORT_METHOD(pause:(RCTResponseSenderBlock)callback)
         SCRecordSessionSegment* ls = [_recorderView lastSegment];
 
         if (ls != nil) {
-            NSString *thumbnail = [_recorderView saveImage:ls.thumbnail];
             NSString *url = [ls.url relativeString];
             float duration = CMTimeGetSeconds(ls.duration);
 
-            NSDictionary *props = @{@"url": url, @"thumbnail":thumbnail, @"duration":@(duration)};
+            NSDictionary *props = @{@"url": url, @"duration":@(duration)};
             callback(@[props]);
         }
 
@@ -91,42 +80,40 @@ RCT_EXPORT_METHOD(removeSegmentAtIndex:(NSInteger)index)
 
 RCT_EXPORT_METHOD(save:(RCTResponseSenderBlock)callback)
 {
+    UIApplication *app = [UIApplication sharedApplication];
+    _backgroundSavingID = [app beginBackgroundTaskWithExpirationHandler:^{
+        [app endBackgroundTask:_backgroundSavingID];
+        _backgroundSavingID = UIBackgroundTaskInvalid;
+        callback(@[@"Ran out of time loading video in the background.", [NSNull null]]);
+    }];
     [_recorderView save:^(NSError *error, NSURL *url) {
         if (error == nil && url != nil) {
-            callback(@[[NSNull null], [url relativeString]]);
+            [app endBackgroundTask:_backgroundSavingID];
+            callback(@[[NSNull null], [url relativePath]]);
         } else {
+            [app endBackgroundTask:_backgroundSavingID];
             callback(@[[error localizedDescription], [NSNull null]]);
         }
     }];
 }
 
-#pragma mark - SCRecorder events
-
-- (void)recorder:(RNSCRecorder *)recorder didInitializeAudioInSession:(SCRecordSession *)recordSession error:(NSError *)error {
-    if (error == nil) {
-        NSLog(@"Initialized audio in record session");
-    } else {
-        NSLog(@"Failed to initialize audio in record session: %@", error.localizedDescription);
-    }
-}
-
-- (void)recorder:(RNSCRecorder *)recorder didInitializeVideoInSession:(SCRecordSession *)recordSession error:(NSError *)error {
-    if (error == nil) {
-        NSLog(@"Initialized video in record session");
-    } else {
-        NSLog(@"Failed to initialize video in record session: %@", error.localizedDescription);
-    }
-}
-
-- (void)recorder:(RNSCRecorder *)recorder didCompleteSession:(SCRecordSession *)recordSession
+RCT_EXPORT_METHOD(saveWithAudio:(NSString*)audioPath saveCallback:(RCTResponseSenderBlock)callback)
 {
-    NSLog(@"\n\nSession Completed\n\n");
-    if(!recorder.onEnd)
-    {
-        return;
-    }
-    
-    recorder.onEnd(@{});
+    UIApplication *app = [UIApplication sharedApplication];
+    _backgroundSavingID = [app beginBackgroundTaskWithExpirationHandler:^{
+        [app endBackgroundTask:_backgroundSavingID];
+        _backgroundSavingID = UIBackgroundTaskInvalid;
+        callback(@[@"Ran out of time loading video in the background.", [NSNull null]]);
+    }];
+    [_recorderView saveWithAudio:audioPath saveCallback:^(NSError *error, NSURL *url) {
+        if (error == nil && url != nil) {
+            [app endBackgroundTask:_backgroundSavingID];
+            callback(@[[NSNull null], [url relativePath]]);
+        } else {
+            [app endBackgroundTask:_backgroundSavingID];
+            callback(@[[error localizedDescription], [NSNull null]]);
+        }
+    }];
 }
 
 @end

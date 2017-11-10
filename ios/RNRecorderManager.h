@@ -2,9 +2,9 @@
 #define RNRecorder_RCTViewManager_h
 
 #import "RCTViewManager.h"
-#import "SCRecorder.h"
 
-@interface RNRecorderManager : RCTViewManager <SCRecorderDelegate>
+@interface RNRecorderManager : RCTViewManager
+@property (nonatomic,assign) UIBackgroundTaskIdentifier __block backgroundSavingID;
 
 @end
 
