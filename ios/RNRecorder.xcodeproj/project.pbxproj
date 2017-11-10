@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		941013D61FA2829D00242E2B /* RNSCRecorder.m in Sources */ = {isa = PBXBuildFile; fileRef = 941013D51FA2829D00242E2B /* RNSCRecorder.m */; };
 		D42CB35D1B2538DE00FD0AE2 /* libRNRecorder.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D42CB3511B2538DE00FD0AE2 /* libRNRecorder.a */; };
 		D42CB36D1B25394600FD0AE2 /* RNRecorderManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D42CB36C1B25394600FD0AE2 /* RNRecorderManager.m */; };
 		D42CB3701B253C0B00FD0AE2 /* RNRecorder.m in Sources */ = {isa = PBXBuildFile; fileRef = D42CB36F1B253C0B00FD0AE2 /* RNRecorder.m */; };
@@ -58,8 +57,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		941013D41FA2829D00242E2B /* RNSCRecorder.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RNSCRecorder.h; sourceTree = "<group>"; };
-		941013D51FA2829D00242E2B /* RNSCRecorder.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RNSCRecorder.m; sourceTree = "<group>"; };
 		D42CB3511B2538DE00FD0AE2 /* libRNRecorder.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRNRecorder.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		D42CB35C1B2538DE00FD0AE2 /* RNRecorderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RNRecorderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D42CB36B1B25392F00FD0AE2 /* RNRecorderManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RNRecorderManager.h; sourceTree = "<group>"; };
@@ -92,8 +89,6 @@
 		D42CB3481B2538DE00FD0AE2 = {
 			isa = PBXGroup;
 			children = (
-				941013D41FA2829D00242E2B /* RNSCRecorder.h */,
-				941013D51FA2829D00242E2B /* RNSCRecorder.m */,
 				D42CB36F1B253C0B00FD0AE2 /* RNRecorder.m */,
 				D42CB36E1B253BBD00FD0AE2 /* RNRecorder.h */,
 				D42CB36C1B25394600FD0AE2 /* RNRecorderManager.m */,
@@ -249,7 +244,6 @@
 			files = (
 				D42CB36D1B25394600FD0AE2 /* RNRecorderManager.m in Sources */,
 				D42CB3701B253C0B00FD0AE2 /* RNRecorder.m in Sources */,
-				941013D61FA2829D00242E2B /* RNSCRecorder.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
