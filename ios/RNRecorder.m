@@ -12,6 +12,8 @@
    SCRecorder *_recorder;
    /* SCRecorder session instance */
    SCRecordSession *_session;
+   
+   BOOL _isRunning;
    /* Preview view ¨*/
    UIView *_previewView;
    /* Configuration */
@@ -344,7 +346,12 @@
       _recorder.previewView = _previewView;
       [_previewView setBackgroundColor:[UIColor blackColor]];
       [self insertSubview:_previewView atIndex:0];
+   }
+   
+   if (!_isRunning)
+   {
       [_recorder startRunning];
+      _isRunning = YES;
    }
    
    if (_session == nil) {
@@ -368,8 +375,7 @@
 - (void)removeFromSuperview
 {
    [_recorder stopRunning];
-   _previewView = nil;
-   _recorder.previewView = nil;
+   _isRunning = NO;
    [super removeFromSuperview];
 }
 
