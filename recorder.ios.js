@@ -97,7 +97,7 @@ export default class Recorder extends Component {
   /*** RENDER ***/
 
   render() {
-    const config = merge({
+    const config = merge.recursive({
       autoSetVideoOrientation: false,
       maxRecordDuration: 0,
       video: {
